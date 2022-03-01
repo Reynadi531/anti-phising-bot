@@ -1,0 +1,12 @@
+version: '3'
+services:
+  phising-checker-bot:
+    build: 
+      context: ../
+      dockerfile: docker/dev.Dockerfile
+    container_name: phising-checker-bot_dev
+    volumes:
+      - ../:/app
+    restart: unless-stopped
+    env_file:
+      - app.env
