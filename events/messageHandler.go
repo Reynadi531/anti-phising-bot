@@ -18,7 +18,7 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	for _, v := range links {
-		phising, err := utils.CheckPhising(string(v))
+		phising, sus, err := utils.CheckPhisingAndSuspicious(string(v))
 		if err != nil {
 			fmt.Println("Error when checking link: ", err)
 			return
@@ -38,6 +38,28 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 			timemessagesended, _ := m.Timestamp.Parse()
 			dmMessage := fmt.Sprintf("You're sending phising link at `%s` with message contains `%s`. This message contains phising was sended at <t:%d:R>. Message contains phising will be deleted", guildInfo.Name, v, timemessagesended.Unix())
+			_, err = s.ChannelMessageSend(channel.ID, dmMessage)
+			if err != nil {
+				fmt.Println("Failed send DM", err)
+			}
+
+			break
+		}
+
+		if sus {
+			s.ChannelMessageDelete(m.ChannelID, m.ID)
+			channel, err := s.UserChannelCreate(m.Author.ID)
+			if err != nil {
+				fmt.Println("Failed create DM", err)
+			}
+
+			guildInfo, err := s.Guild(m.GuildID)
+			if err != nil {
+				fmt.Println("Failed retrive guild info", err)
+			}
+
+			timemessagesended, _ := m.Timestamp.Parse()
+			dmMessage := fmt.Sprintf("You're sending suspicious link at `%s` with message contains `%s`. This message contains suspicious was sended at <t:%d:R>. Message contains suspicious will be deleted", guildInfo.Name, v, timemessagesended.Unix())
 			_, err = s.ChannelMessageSend(channel.ID, dmMessage)
 			if err != nil {
 				fmt.Println("Failed send DM", err)

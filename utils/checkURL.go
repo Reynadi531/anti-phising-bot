@@ -14,10 +14,11 @@ var (
 )
 
 type CheckResult struct {
-	IsFound   bool      `json:"isFound"`
-	IsPhising bool      `json:"isPhising"`
-	Domain    string    `json:"domain"`
-	Date      time.Time `json:"date"`
+	IsFound      bool      `json:"isFound"`
+	IsPhising    bool      `json:"isPhising"`
+	IsSuspicious bool      `json:"isSuspicious"`
+	Domain       string    `json:"domain"`
+	Date         time.Time `json:"date"`
 }
 
 type ResponseCheck struct {
@@ -33,7 +34,7 @@ func ExtractURL(message string) [][]byte {
 	return link
 }
 
-func CheckPhising(link string) (bool, error) {
+func CheckPhisingAndSuspicious(link string) (bool, bool, error) {
 	urlparams := url.Values{}
 	urlparams.Add("url", link)
 
@@ -41,18 +42,23 @@ func CheckPhising(link string) (bool, error) {
 
 	resp, err := http.Get(checkurl)
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	defer resp.Body.Close()
 
 	var cResp ResponseCheck
 
 	if err := json.NewDecoder(resp.Body).Decode(&cResp); err != nil {
-		return false, err
+		return false, false, err
 	}
 
-	if cResp.Data.IsPhising {
-		return true, nil
+	if cResp.Data.IsPhising && cResp.Data.IsSuspicious {
+		return true, true, nil
+	} else if cResp.Data.IsPhising {
+		return true, false, nil
+	} else if cResp.Data.IsSuspicious {
+		return false, true, nil
 	}
-	return false, nil
+
+	return false, false, nil
 }
